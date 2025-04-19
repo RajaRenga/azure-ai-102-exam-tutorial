@@ -1,0 +1,77 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "adminUsername": {
+      "type": "string",
+      "metadata": {
+        "description": "Admin username for SQL Server"
+      }
+    },
+    "adminPassword": {
+      "type": "securestring",
+      "metadata": {
+        "description": "Admin password for SQL Server"
+      }
+    },
+    "vnetName": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of the virtual network for SQL Server"
+      }
+    }
+  },
+  "variables": {},
+  "resources": [
+    {
+      "type": "Microsoft.Sql/servers",
+      "apiVersion": "2019-06-01-preview",
+      "name": "mySqlServer",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "administratorLogin": "[parameters('adminUsername')]",
+        "administratorLoginPassword": "[parameters('adminPassword')]"
+      }
+    },
+    {
+      "type": "Microsoft.Sql/servers/databases",
+      "apiVersion": "2019-06-01-preview",
+      "name": "myDatabase",
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers', 'mySqlServer')]"
+      ],
+      "properties": {
+        "collation": "SQL_Latin1_General_CP1_CI_AS",
+        "edition": "Basic",
+        "maxSizeBytes": "107374182400",
+        "requestedServiceObjectiveName": "Basic"
+      }
+    },
+    {
+      "type": "Microsoft.Sql/servers/virtualNetworkRules",
+      "apiVersion": "2019-06-01-preview",
+      "name": "mySqlServerVnetRule",
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers', 'mySqlServer')]"
+      ],
+      "properties": {
+        "virtualNetworkSubnetId": "[concat(resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('vnetName'), 'default'))]"
+      }
+    },
+    {
+      "type": "Microsoft.Sql/servers/transparentDataEncryption",
+      "apiVersion": "2019-06-01-preview",
+      "name": "mySqlServerTDE",
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers', 'mySqlServer')]"
+      ],
+      "properties": {}
+    }
+  ],
+  "outputs": {
+    "serverFQDN": {
+      "type": "string",
+      "value": "[reference('mySqlServer').fullyQualifiedDomainName]"
+    }
+  }
+}
