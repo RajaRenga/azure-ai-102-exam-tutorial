@@ -1,0 +1,71 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: AWS CloudFormation template to provision an Amazon RDS Oracle instance
+
+Parameters:
+  DBInstanceClass:
+    Type: String
+    Default: db.m5.large
+    Description: Enter the instance class for the RDS Oracle instance
+  AllocatedStorage:
+    Type: Number
+    Default: 20
+    Description: Enter the allocated storage for the RDS Oracle instance
+  EngineVersion:
+    Type: String
+    Default: 19.0.0.0.ru-2021-04.rur-2021-04.r1
+    Description: Enter the Oracle engine version for the RDS Oracle instance
+  BackupRetentionPeriod:
+    Type: Number
+    Default: 7
+    Description: Enter the backup retention period in days
+  KmsKeyId:
+    Type: String
+    Default: arn:aws:kms:us-east-1:123456789012:key/abcd1234-12ab-34cd-56ef-1234567890ab
+    Description: Enter the AWS KMS Key ID for encryption at rest
+  MaintenanceWindow:
+    Type: String
+    Default: Sun:23:00-Mon:01:00
+    Description: Enter the maintenance window for the RDS Oracle instance
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+    Description: Enter the VPC ID where the RDS Oracle instance will be deployed
+  SubnetIds:
+    Type: List<AWS::EC2::Subnet::Id>
+    Description: Enter the subnet IDs for the RDS Oracle instance
+  SecurityGroupIds:
+    Type: List<AWS::EC2::SecurityGroup::Id>
+    Description: Enter the security group IDs for the RDS Oracle instance
+
+Resources:
+  RDSInstance:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      DBInstanceClass: !Ref DBInstanceClass
+      AllocatedStorage: !Ref AllocatedStorage
+      Engine: oracle-se2
+      EngineVersion: !Ref EngineVersion
+      MultiAZ: true
+      BackupRetentionPeriod: !Ref BackupRetentionPeriod
+      KmsKeyId: !Ref KmsKeyId
+      PreferredBackupWindow: "00:00-00:30"
+      PreferredMaintenanceWindow: !Ref MaintenanceWindow
+      VPCSecurityGroups: !Ref SecurityGroupIds
+      DBSubnetGroupName: !Ref SubnetIds
+      Tags:
+        - Key: Environment
+          Value: Production
+        - Key: Project
+          Value: ProjectNameHere
+        - Key: Owner
+          Value: OwnerNameHere
+
+Outputs:
+  RDSInstanceEndpoint:
+    Description: Endpoint of the RDS Oracle instance
+    Value: !GetAtt RDSInstance.Endpoint.Address
+  RDSInstancePort:
+    Description: Port of the RDS Oracle instance
+    Value: !GetAtt RDSInstance.Endpoint.Port
+  RDSInstanceResourceId:
+    Description: Resource ID of the RDS Oracle instance
+    Value: !Ref RDSInstance
