@@ -1,0 +1,23 @@
+```terraform
+provider "aws" {
+  region = "us-east-1"  # Specify the desired AWS region
+}
+
+resource "aws_kinesis_stream" "my_kinesis_stream" {
+  name             = "my-kinesis-stream"  # Specify the desired stream name
+  shard_count      = 2  # Specify the desired shard count
+  retention_period = 24  # Specify the retention period in hours
+
+  encryption_type = "KMS"
+  kms_key_id      = "arn:aws:kms:us-east-1:123456789012:key/abcd1234-12ab-34cd-56ef-1234567890ab"  # Specify the KMS key ARN for encryption
+}
+
+# Security Risks:
+# - Ensure proper management of KMS key for encryption
+# - Limit access to the Kinesis Data Stream to only necessary IAM roles/users
+# - Regularly review and rotate IAM credentials with access to the stream
+
+# Naming Conventions:
+# - Use descriptive names for resources to indicate their purpose
+# - Follow a consistent naming convention across all resources in the environment
+```  
