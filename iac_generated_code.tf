@@ -1,72 +1,85 @@
-provider "azurerm" {
-  features {}
+# Define variables
+variable "region" {
+  default = "eastus"
 }
 
-# Define the address space for the Virtual Network
-resource "azurerm_virtual_network" "my_vnet" {
-  name                = "my-vnet"
-  address_space       = ["10.0.0.0/16"] # Define the desired address space for the VNet
-  location            = "eastus" # Define the region where the VNet will be created
-  resource_group_name = azurerm_resource_group.my_rg.name
+variable "vnet_address_space" {
+  default = "10.0.0.0/16"  # Suggested value, update as needed
+}
+
+variable "subnet1_cidr" {
+  default = "10.0.1.0/24"  # Suggested value, update as needed
+}
+
+variable "subnet2_cidr" {
+  default = "10.0.2.0/24"  # Suggested value, update as needed
+}
+
+# Create Azure Resource Group
+resource "azurerm_resource_group" "myresourcegroup" {
+  name     = "myResourceGroup"
+  location = var.region
+}
+
+# Create Azure Virtual Network
+resource "azurerm_virtual_network" "myvnet" {
+  name                = "myVNet"
+  resource_group_name = azurerm_resource_group.myresourcegroup.name
+  location            = azurerm_resource_group.myresourcegroup.location
+  address_space       = [var.vnet_address_space]
 
   tags = {
-    environment = "production",
-    project     = "my-project"
+    environment = "production"
   }
 }
 
-# Define the subnet within the Virtual Network
-resource "azurerm_subnet" "my_subnet" {
-  name                 = "my-subnet"
-  resource_group_name  = azurerm_resource_group.my_rg.name
-  virtual_network_name = azurerm_virtual_network.my_vnet.name
-  address_prefixes     = ["10.0.1.0/24"] # Define the desired subnet address space
-
-  service_endpoints = ["Microsoft.Storage", "Microsoft.Sql"] # Define service endpoints for the subnet
-
-  tags = {
-    environment = "production",
-    project     = "my-project"
-  }
+# Create Subnets in the Virtual Network
+resource "azurerm_subnet" "subnet1" {
+  name                 = "subnet1"
+  virtual_network_name = azurerm_virtual_network.myvnet.name
+  resource_group_name  = azurerm_resource_group.myresourcegroup.name
+  address_prefixes     = [var.subnet1_cidr]
 }
 
-# Define a Network Security Group for the subnet
-resource "azurerm_network_security_group" "my_nsg" {
-  name                = "my-nsg"
-  location            = "eastus" # Define the region where the NSG will be created
-  resource_group_name = azurerm_resource_group.my_rg.name
+resource "azurerm_subnet" "subnet2" {
+  name                 = "subnet2"
+  virtual_network_name = azurerm_virtual_network.myvnet.name
+  resource_group_name  = azurerm_resource_group.myresourcegroup.name
+  address_prefixes     = [var.subnet2_cidr]
+}
+
+# Create Azure Network Security Group (NSG) for Subnet1
+resource "azurerm_network_security_group" "nsg_subnet1" {
+  name                = "nsg-subnet1"
+  resource_group_name = azurerm_resource_group.myresourcegroup.name
 
   security_rule {
-    name                       = "SSH"
+    name                       = "Allow-HTTP"
     priority                   = 1001
     direction                  = "Inbound"
     access                     = "Allow"
     protocol                   = "Tcp"
     source_port_range          = "*"
-    destination_port_range     = "22"
-    source_address_prefix      = "*" # Define the allowed source IP range
+    destination_port_range     = "80"
+    source_address_prefix      = "*"
     destination_address_prefix = "*"
   }
 
-  tags = {
-    environment = "production",
-    project     = "my-project"
+  security_rule {
+    name                       = "Deny-All"
+    priority                   = 4096
+    direction                  = "Inbound"
+    access                     = "Deny"
+    protocol                   = "*"
+    source_port_range          = "*"
+    destination_port_range     = "*"
+    source_address_prefix      = "*"
+    destination_address_prefix = "*"
   }
 }
 
-# Associate the NSG with the subnet
-resource "azurerm_subnet_network_security_group_association" "my_nsg_association" {
-  subnet_id                 = azurerm_subnet.my_subnet.id
-  network_security_group_id = azurerm_network_security_group.my_nsg.id
-}
-
-# Define a Resource Group for the VNet
-resource "azurerm_resource_group" "my_rg" {
-  name     = "my-resource-group" # Define the name for the resource group
-  location = "eastus" # Define the region where the resource group will be created
-
-  tags = {
-    environment = "production",
-    project     = "my-project"
-  }
+# Associate NSG with Subnet1
+resource "azurerm_subnet_network_security_group_association" "subnet1_nsg_association" {
+  subnet_id                 = azurerm_subnet.subnet1.id
+  network_security_group_id = azurerm_network_security_group.nsg_subnet1.id
 }
