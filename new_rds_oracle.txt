@@ -1,0 +1,131 @@
+# main.tf
+
+provider "aws" {
+  region = "us-east-1"  # Set your preferred AWS region
+}
+
+module "vpc" {
+  source = "./modules/vpc"
+  # Add any necessary input variables for VPC module here
+}
+
+module "rds_instance" {
+  source = "./modules/rds_instance"
+  instance_class = "db.m6g.large"
+  storage_size = 100
+  oracle_edition = "oracle-se2"
+  vpc_id = module.vpc.vpc_id
+  subnet_ids = module.vpc.private_subnet_ids
+  security_group_ids = [module.vpc.db_security_group_id]
+  # Add any other necessary input variables for RDS instance module here
+}
+
+module "db_parameter_group" {
+  source = "./modules/db_parameter_group"
+  # Add any necessary input variables for DB parameter group module here
+}
+```
+
+```hcl
+# modules/vpc/main.tf
+
+variable "vpc_cidr_block" {
+  default = "10.0.0.0/16"  # Default VPC CIDR block
+}
+
+variable "private_subnet_cidr_blocks" {
+  default = ["10.0.1.0/24", "10.0.2.0/24"]  # Default private subnet CIDR blocks
+}
+
+variable "trusted_cidr_blocks" {
+  default = ["0.0.0.0/0"]  # Default trusted CIDR blocks for security group
+}
+
+variable "tags" {
+  default = {
+    Environment = "production",
+    Owner = "admin",
+    Project = "myproject"
+  }
+}
+
+# Define VPC, subnets, and security groups here
+```
+
+```hcl
+# modules/rds_instance/main.tf
+
+variable "instance_class" {
+  type    = string
+  # Default instance class
+  default = "db.m6g.large"
+}
+
+variable "storage_size" {
+  type    = number
+  # Default storage size in GiB
+  default = 100
+}
+
+variable "oracle_edition" {
+  type    = string
+  # Default Oracle edition
+  default = "oracle-se2"
+}
+
+variable "vpc_id" {
+  type = string
+  # Default VPC ID
+  default = "vpc-12345678"
+}
+
+variable "subnet_ids" {
+  type = list(string)
+  # Default subnet IDs
+  default = ["subnet-12345678", "subnet-87654321"]
+}
+
+variable "security_group_ids" {
+  type = list(string)
+  # Default security group IDs
+  default = ["sg-12345678"]
+}
+
+variable "kms_key_id" {
+  type = string
+  # Default KMS key ID for encryption
+  default = "arn:aws:kms:us-east-1:123456789012:key/abcdef01-2345-6789-abcd-1234567890ab"
+}
+
+variable "tags" {
+  default = {
+    Environment = "production",
+    Owner = "admin",
+    Project = "myproject"
+  }
+}
+
+# Provision RDS instance with specified configurations
+```
+
+```hcl
+# modules/db_parameter_group/main.tf
+
+variable "custom_parameters" {
+  type    = map(string)
+  # Default custom DB parameters
+  default = {
+    parameter1 = "value1",
+    parameter2 = "value2"
+  }
+}
+
+variable "tags" {
+  default = {
+    Environment = "production",
+    Owner = "admin",
+    Project = "myproject"
+  }
+}
+
+# Create custom DB parameter group
