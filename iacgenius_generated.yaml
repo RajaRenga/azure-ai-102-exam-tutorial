@@ -1,0 +1,59 @@
+```yaml
+Resources:
+  MyEksCluster:
+    Type: AWS::EKS::Cluster
+    Properties:
+      Name: my-eks-cluster # Change to a unique name
+      ResourcesVpcConfig:
+        SecurityGroupIds:
+          - !Ref MySecurityGroup
+        SubnetIds:
+          - subnet-12345678 # Change to your subnet ID
+          - subnet-87654321 # Change to your subnet ID
+
+  MyNodeGroup:
+    Type: AWS::EKS::Nodegroup
+    Properties:
+      ClusterName: !Ref MyEksCluster
+      NodegroupName: my-nodegroup # Change to a unique name
+      ScalingConfig:
+        DesiredSize: 2
+        MaxSize: 3
+        MinSize: 1
+      Subnets:
+        - subnet-12345678 # Change to your subnet ID
+        - subnet-87654321 # Change to your subnet ID
+      InstanceTypes:
+        - t3.medium # Choose appropriate instance type
+      NodeRole: !Ref MyNodeRole
+
+  MySecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: EKS cluster security group
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+      VpcId: vpc-12345678 # Change to your VPC ID
+
+  MyNodeRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: EKSNodePolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: 'eks:DescribeNodegroup'
+                Resource: '*'
+```
