@@ -1,0 +1,162 @@
+### `main.tf`
+
+```hcl
+provider "aws" {
+  region = var.aws_region
+}
+
+# Create an Oracle RDS instance
+resource "aws_db_instance" "oracle_rds" {
+  allocated_storage    = var.storage_size
+  storage_type         = "gp3"
+  engine               = "oracle-se2" # Oracle Standard Edition Two
+  engine_version       = var.oracle_version
+  instance_class       = var.instance_class
+  identifier           = var.db_identifier
+  name                 = var.db_identifier
+  username             = var.master_username
+  password             = var.master_password
+  vpc_security_group_ids = var.security_groups
+  db_subnet_group_name   = var.db_subnet_group
+  multi_az              = var.multi_az
+
+  backup_retention_period = var.backup_retention_period
+  backup_window           = var.backup_window
+
+  monitoring_interval     = 60
+  monitoring_role_name    = "RDSMonitoringRole"
+
+  tags = {
+    Environment = "Production"
+    Owner       = "YourName"
+    Project     = "ProjectName"
+  }
+
+  # Enable encryption at rest
+  storage_encrypted = true
+  kms_key_id        = var.kms_key_id
+}
+
+# IAM role for RDS monitoring and management
+resource "aws_iam_role" "rds_role" {
+  name = "RDSRole"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Effect = "Allow",
+        Principal = {
+          Service = "rds.amazonaws.com"
+        },
+        Action = "sts:AssumeRole"
+      }
+    ]
+  })
+
+  tags = {
+    Environment = "Production"
+    Owner       = "YourName"
+    Project     = "ProjectName"
+  }
+}
+
+resource "aws_iam_policy_attachment" "rds_policy_attachment" {
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonRDSServiceRolePolicy"
+  roles      = [aws_iam_role.rds_role.name]
+}
+```
+
+### `variables.tf`
+
+```hcl
+variable "aws_region" {
+  description = "The AWS region where resources will be created"
+  default     = "us-east-1"
+}
+
+variable "oracle_version" {
+  description = "Oracle database engine version"
+}
+
+variable "instance_class" {
+  description = "The RDS instance class"
+  default     = "db.m5.large"
+}
+
+variable "db_identifier" {
+  description = "The identifier for the RDS instance"
+}
+
+variable "master_username" {
+  description = "Master username for the RDS instance"
+}
+
+variable "master_password" {
+  description = "Master password for the RDS instance"
+}
+
+variable "security_groups" {
+  description = "List of security group IDs for the RDS instance"
+}
+
+variable "db_subnet_group" {
+  description = "Name of the DB subnet group for the RDS instance"
+}
+
+variable "storage_size" {
+  description = "Size of storage for the RDS instance in GiB"
+  default     = 20
+}
+
+variable "multi_az" {
+  description = "Enable Multi-AZ deployment"
+  default     = false
+}
+
+variable "backup_retention_period" {
+  description = "Number of days to retain backups"
+  default     = 7
+}
+
+variable "backup_window" {
+  description = "Preferred backup window for the RDS instance"
+}
+
+variable "kms_key_id" {
+  description = "KMS key ID for encryption at rest"
+}
+```
+
+### `README.md`
+
+```markdown
+# Oracle RDS Terraform Configuration
+
+This Terraform configuration creates an Oracle RDS instance in AWS with the specified configurations.
+
+## Usage
+1. Fill in the required values in `variables.tf`.
+2. Initialize the Terraform configuration by running `terraform init`.
+3. Create an execution plan by running `terraform plan`.
+4. Apply the configuration by running `terraform apply`.
+
+## Variables
+- `aws_region`: AWS region for resource creation.
+- `oracle_version`: Oracle database engine version.
+- `instance_class`: RDS instance class.
+- `db_identifier`: Identifier for the RDS instance.
+- `master_username`: Master username for the RDS instance.
+- `master_password`: Master password for the RDS instance.
+- `security_groups`: List of security group IDs for the RDS instance.
+- `db_subnet_group`: Name of the DB subnet group for the RDS instance.
+- `storage_size`: Size of storage for the RDS instance in GiB.
+- `multi_az`: Enable Multi-AZ deployment.
+- `backup_retention_period`: Number of days to retain backups.
+- `backup_window`: Preferred backup window for the RDS instance.
+- `kms_key_id`: KMS key ID for encryption at rest.
+
+## Security
+Ensure that all sensitive information such as passwords and keys are securely stored and managed.
+```
+
+This Terraform configuration sets up an Oracle RDS instance in the specified AWS region with the provided configurations. It includes encryption at rest, IAM roles, monitoring, and tags for resource management. Adjust the variables in `variables.tf` to match your specific requirements.
